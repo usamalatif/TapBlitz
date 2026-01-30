@@ -1,4 +1,4 @@
-import React, {useEffect, useCallback} from 'react';
+import React, {useEffect, useCallback, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   Dimensions,
   Pressable,
 } from 'react-native';
+
+const GAME_DURATION_SECONDS = 90; // 1.5 minutes
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RouteProp, useNavigation, useRoute} from '@react-navigation/native';
 import Animated, {
@@ -44,6 +46,46 @@ const GameScreen: React.FC = () => {
 
   const currentPlayer = players.find(p => p.id === currentPlayerId);
   const tapScale = useSharedValue(1);
+  const [timeRemaining, setTimeRemaining] = useState(GAME_DURATION_SECONDS);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Start timer when game starts playing
+  useEffect(() => {
+    if (gameState === 'playing') {
+      setTimeRemaining(GAME_DURATION_SECONDS);
+      timerRef.current = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [gameState]);
+
+  // Clear timer when game ends
+  useEffect(() => {
+    if (gameState === 'finished' && timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+  }, [gameState]);
+
+  // Format time as MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // Navigate to results when game ends
   useEffect(() => {
@@ -88,8 +130,16 @@ const GameScreen: React.FC = () => {
         <Countdown value={countdownValue} />
       )}
 
-      {/* Header with tap count */}
+      {/* Header with tap count and timer */}
       <View style={styles.header}>
+        {/* Timer */}
+        {gameState === 'playing' && (
+          <View style={[styles.timerContainer, timeRemaining <= 10 && styles.timerWarning]}>
+            <Text style={[styles.timerText, timeRemaining <= 10 && styles.timerTextWarning]}>
+              ⏱ {formatTime(timeRemaining)}
+            </Text>
+          </View>
+        )}
         <Text style={styles.playerName}>
           {currentPlayer?.username || 'Player'}
         </Text>
@@ -179,6 +229,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: SPACING.xl,
     paddingBottom: SPACING.md,
+  },
+  timerContainer: {
+    backgroundColor: COLORS.backgroundMedium,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.xs,
+    borderRadius: 20,
+    marginBottom: SPACING.sm,
+  },
+  timerWarning: {
+    backgroundColor: COLORS.danger,
+  },
+  timerText: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
+  },
+  timerTextWarning: {
+    color: COLORS.white,
   },
   playerName: {
     fontSize: FONT_SIZES.lg,

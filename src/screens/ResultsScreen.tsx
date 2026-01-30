@@ -93,7 +93,7 @@ const ResultsScreen: React.FC = () => {
         </View>
 
         <Text style={styles.progressText}>
-          {item.finished ? '100%' : `${Math.round(item.progress)}%`}
+          {item.progress >= 100 ? '100%' : `${Math.round(item.progress)}%`}
         </Text>
       </Animated.View>
     );

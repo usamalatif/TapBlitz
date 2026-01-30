@@ -237,11 +237,10 @@ class GameManager {
     if (!room) return null;
 
     // Game ends when:
-    // 1. All players finish
-    // 2. 3 players finish (for games with 3+ players)
-    // 3. For 2-player games: both players finish
-    // 4. Timer expired (forceEnd = true)
-    const minWinnersNeeded = room.players.length === 2 ? 2 : Math.min(3, room.players.length);
+    // 1. For 2-player games: 1 player finishes (winner declared)
+    // 2. For 3+ player games: 3 players finish OR all players finish
+    // 3. Timer expired (forceEnd = true)
+    const minWinnersNeeded = room.players.length === 2 ? 1 : Math.min(3, room.players.length);
     const gameEnded = forceEnd ||
       room.finishedCount >= room.players.length ||
       room.finishedCount >= minWinnersNeeded;
@@ -249,9 +248,46 @@ class GameManager {
     if (gameEnded && room.gameState === 'playing') {
       room.gameState = 'finished';
 
-      const winners = room.players
-        .filter(p => p.finished && p.finishPosition && p.finishPosition <= 3)
-        .sort((a, b) => (a.finishPosition || 0) - (b.finishPosition || 0));
+      let winners: Player[];
+
+      if (forceEnd) {
+        // Timer expired - determine winners by most taps
+        // First, mark all unfinished players with their positions based on tap count
+        const unfinishedPlayers = room.players.filter(p => !p.finished);
+        const finishedPlayers = room.players.filter(p => p.finished);
+
+        // Sort unfinished players by taps (descending) - most taps = better position
+        unfinishedPlayers.sort((a, b) => b.taps - a.taps);
+
+        // If NO ONE finished (reached 100 taps), assign all positions by tap count
+        if (finishedPlayers.length === 0) {
+          // Everyone gets position based on tap count
+          unfinishedPlayers.forEach((player, index) => {
+            player.finishPosition = index + 1;
+            player.finished = true;
+          });
+        } else {
+          // Some players finished, assign remaining positions to unfinished players
+          let nextPosition = finishedPlayers.length + 1;
+          unfinishedPlayers.forEach(player => {
+            player.finishPosition = nextPosition;
+            player.finished = true;
+            nextPosition++;
+          });
+        }
+
+        // Winners are top 3 players (by finish position)
+        winners = room.players
+          .filter(p => p.finishPosition && p.finishPosition <= 3)
+          .sort((a, b) => (a.finishPosition || 0) - (b.finishPosition || 0));
+
+        console.log('Timer expired - Winners:', winners.map(w => ({ name: w.username, taps: w.taps, position: w.finishPosition })));
+      } else {
+        // Normal game end - winners are those who finished in top 3
+        winners = room.players
+          .filter(p => p.finished && p.finishPosition && p.finishPosition <= 3)
+          .sort((a, b) => (a.finishPosition || 0) - (b.finishPosition || 0));
+      }
 
       const gameDuration = room.startTime ? Date.now() - room.startTime : 0;
 
