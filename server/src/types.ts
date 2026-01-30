@@ -30,6 +30,7 @@ export interface ServerToClientEvents {
   'room-created': (data: { roomId: string; playerId: string }) => void;
   'room-joined': (data: { roomId: string; playerId: string; playerNumber: number }) => void;
   'room-updated': (room: GameRoom) => void;
+  'room-reset': () => void;
   'player-joined': (player: Player) => void;
   'player-left': (playerId: string) => void;
   'player-ready-changed': (data: { playerId: string; isReady: boolean }) => void;
@@ -48,4 +49,5 @@ export interface ClientToServerEvents {
   'toggle-ready': (isReady: boolean) => void;
   'start-game': () => void;
   'tap': () => void;
+  'reset-room': () => void;
 }

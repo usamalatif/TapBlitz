@@ -1,11 +1,19 @@
 // Haptic Feedback Service
-// Note: For full haptic support on iOS, install react-native-haptic-feedback
-// This implementation uses the built-in Vibration API as fallback
+// Uses react-native-haptic-feedback for iOS and Vibration API for Android
 
 import {Vibration, Platform} from 'react-native';
+import ReactNativeHapticFeedback, {
+  HapticFeedbackTypes,
+} from 'react-native-haptic-feedback';
 import {useUserStore} from '../store/userStore';
 
 type HapticType = 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error';
+
+// Haptic feedback options for iOS
+const hapticOptions = {
+  enableVibrateFallback: true,
+  ignoreAndroidSystemSettings: false,
+};
 
 class HapticService {
   private isSupported = true;
@@ -14,25 +22,28 @@ class HapticService {
     const hapticEnabled = useUserStore.getState().hapticEnabled;
     if (!hapticEnabled) return;
 
-    // Use built-in Vibration API
-    // Duration in milliseconds
-    const durations: Record<HapticType, number> = {
-      light: 10,
-      medium: 20,
-      heavy: 30,
-      success: 40,
-      warning: 50,
-      error: 100,
-    };
-
-    const duration = durations[type] || 10;
-
-    if (Platform.OS === 'android') {
-      Vibration.vibrate(duration);
+    if (Platform.OS === 'ios') {
+      // Use native iOS haptic feedback
+      const iosHapticTypes: Record<HapticType, HapticFeedbackTypes> = {
+        light: HapticFeedbackTypes.impactLight,
+        medium: HapticFeedbackTypes.impactMedium,
+        heavy: HapticFeedbackTypes.impactHeavy,
+        success: HapticFeedbackTypes.notificationSuccess,
+        warning: HapticFeedbackTypes.notificationWarning,
+        error: HapticFeedbackTypes.notificationError,
+      };
+      ReactNativeHapticFeedback.trigger(iosHapticTypes[type], hapticOptions);
     } else {
-      // iOS - use pattern for simple vibration
-      // For better iOS haptics, use react-native-haptic-feedback
-      Vibration.vibrate([0, duration]);
+      // Android - use Vibration API
+      const durations: Record<HapticType, number> = {
+        light: 10,
+        medium: 20,
+        heavy: 30,
+        success: 40,
+        warning: 50,
+        error: 100,
+      };
+      Vibration.vibrate(durations[type] || 10);
     }
   }
 
@@ -66,11 +77,15 @@ class HapticService {
     const hapticEnabled = useUserStore.getState().hapticEnabled;
     if (!hapticEnabled) return;
 
-    if (Platform.OS === 'android') {
-      Vibration.vibrate(5);
+    if (Platform.OS === 'ios') {
+      // Use soft impact for rapid tapping on iOS
+      ReactNativeHapticFeedback.trigger(
+        HapticFeedbackTypes.soft,
+        hapticOptions,
+      );
     } else {
-      // Minimal vibration for iOS
-      Vibration.vibrate([0, 5]);
+      // Android - minimal vibration
+      Vibration.vibrate(5);
     }
   }
 

@@ -31,6 +31,8 @@ const ResultsScreen: React.FC = () => {
   const isWinner = currentPlayer?.finishPosition === 1;
 
   const handlePlayAgain = () => {
+    // Request server to reset the room first
+    socketService.requestPlayAgain();
     resetGame();
     navigation.replace('Lobby', {
       roomId,

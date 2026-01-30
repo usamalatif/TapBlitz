@@ -17,6 +17,7 @@ interface ServerToClientEvents {
     playerNumber: number;
   }) => void;
   'room-updated': (room: GameRoom) => void;
+  'room-reset': () => void;
   'player-joined': (player: Player) => void;
   'player-left': (playerId: string) => void;
   'player-ready-changed': (data: {playerId: string; isReady: boolean}) => void;
@@ -47,6 +48,7 @@ interface ClientToServerEvents {
   'toggle-ready': (isReady: boolean) => void;
   'start-game': () => void;
   tap: () => void;
+  'reset-room': () => void;
 }
 
 type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -149,6 +151,12 @@ class SocketService {
       gameStore.setGameState(room.gameState);
     });
 
+    this.socket.on('room-reset', () => {
+      console.log('Room reset for play again');
+      const gameStore = useGameStore.getState();
+      gameStore.resetGame();
+    });
+
     this.socket.on('player-joined', player => {
       console.log('Player joined:', player.username);
       useGameStore.getState().addPlayer(player);
@@ -245,6 +253,11 @@ class SocketService {
   sendTap() {
     if (!this.socket?.connected) return;
     this.socket.emit('tap');
+  }
+
+  requestPlayAgain() {
+    if (!this.socket?.connected) return;
+    this.socket.emit('reset-room');
   }
 }
 

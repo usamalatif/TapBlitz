@@ -167,6 +167,22 @@ io.on('connection', (socket) => {
     }, 1000);
   });
 
+  // Reset Room (Play Again)
+  socket.on('reset-room', () => {
+    const room = gameManager.resetRoom(socket.id);
+
+    if (!room) {
+      socket.emit('error', 'Failed to reset room');
+      return;
+    }
+
+    // Notify all players that room has been reset
+    io.to(room.roomId).emit('room-updated', room);
+    io.to(room.roomId).emit('room-reset');
+
+    console.log(`Room ${room.roomId} reset for play again`);
+  });
+
   // Handle Tap
   socket.on('tap', () => {
     const result = gameManager.handleTap(socket.id);

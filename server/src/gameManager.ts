@@ -283,7 +283,19 @@ class GameManager {
 
         console.log('Timer expired - Winners:', winners.map(w => ({ name: w.username, taps: w.taps, position: w.finishPosition })));
       } else {
-        // Normal game end - winners are those who finished in top 3
+        // Normal game end - assign positions to any unfinished players by tap count
+        const unfinishedPlayers = room.players.filter(p => !p.finished);
+        if (unfinishedPlayers.length > 0) {
+          unfinishedPlayers.sort((a, b) => b.taps - a.taps);
+          let nextPosition = room.finishedCount + 1;
+          unfinishedPlayers.forEach(player => {
+            player.finishPosition = nextPosition;
+            player.finished = true;
+            nextPosition++;
+          });
+        }
+
+        // Winners are those who finished in top 3
         winners = room.players
           .filter(p => p.finished && p.finishPosition && p.finishPosition <= 3)
           .sort((a, b) => (a.finishPosition || 0) - (b.finishPosition || 0));
@@ -320,6 +332,36 @@ class GameManager {
 
   getAllRooms(): GameRoom[] {
     return Array.from(this.rooms.values());
+  }
+
+  // Reset room for play again - resets game state to waiting and all player states
+  resetRoom(socketId: string): GameRoom | null {
+    const roomId = this.playerRoomMap.get(socketId);
+    if (!roomId) return null;
+
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+
+    // Only allow reset if game is finished
+    if (room.gameState !== 'finished') return null;
+
+    // Reset room state
+    room.gameState = 'waiting';
+    room.startTime = null;
+    room.finishedCount = 0;
+
+    // Reset all players
+    room.players.forEach(p => {
+      p.progress = 0;
+      p.taps = 0;
+      p.isReady = false;
+      p.finished = false;
+      p.finishPosition = null;
+      p.finishTime = null;
+      p.lastTapTime = 0;
+    });
+
+    return room;
   }
 }
 
