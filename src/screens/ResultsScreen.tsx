@@ -25,7 +25,7 @@ const ResultsScreen: React.FC = () => {
   const route = useRoute<RoutePropType>();
   const {results, roomId} = route.params;
 
-  const {currentPlayerId, resetGame} = useGameStore();
+  const {currentPlayerId, resetGame, isHost} = useGameStore();
 
   const currentPlayer = results.allPlayers.find(p => p.id === currentPlayerId);
   const isWinner = currentPlayer?.finishPosition === 1;
@@ -36,7 +36,7 @@ const ResultsScreen: React.FC = () => {
     resetGame();
     navigation.replace('Lobby', {
       roomId,
-      isHost: false,
+      isHost,
       username: currentPlayer?.username || '',
     });
   };
