@@ -227,7 +227,7 @@ class GameManager {
     return { room, player, finished };
   }
 
-  checkGameEnd(roomId: string): {
+  checkGameEnd(roomId: string, forceEnd: boolean = false): {
     ended: boolean;
     winners: Player[];
     allPlayers: Player[];
@@ -236,10 +236,17 @@ class GameManager {
     const room = this.rooms.get(roomId);
     if (!room) return null;
 
-    // Game ends when 3 players finish OR all players finish
-    const gameEnded = room.finishedCount >= 3 || room.finishedCount >= room.players.length;
+    // Game ends when:
+    // 1. All players finish
+    // 2. 3 players finish (for games with 3+ players)
+    // 3. For 2-player games: both players finish
+    // 4. Timer expired (forceEnd = true)
+    const minWinnersNeeded = room.players.length === 2 ? 2 : Math.min(3, room.players.length);
+    const gameEnded = forceEnd ||
+      room.finishedCount >= room.players.length ||
+      room.finishedCount >= minWinnersNeeded;
 
-    if (gameEnded) {
+    if (gameEnded && room.gameState === 'playing') {
       room.gameState = 'finished';
 
       const winners = room.players
@@ -273,6 +280,10 @@ class GameManager {
     const room = this.getRoomBySocketId(socketId);
     if (!room) return undefined;
     return room.players.find(p => p.socketId === socketId);
+  }
+
+  getAllRooms(): GameRoom[] {
+    return Array.from(this.rooms.values());
   }
 }
 

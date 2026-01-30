@@ -6,8 +6,8 @@ import {Alert} from 'react-native';
 // Update this URL to your server address
 // Use your machine's local IP for physical device testing
 const SERVER_URL = __DEV__
-  ? 'http://192.168.1.33:3001' // For development (your machine's IP)
-  : 'https://your-production-server.com'; // For production
+  ? 'https://tapblitz-production.up.railway.app' //'http://192.168.1.3:3001' // For development (your machine's IP)
+  : 'https://tapblitz-production.up.railway.app'; // For production (no trailing slash)
 
 interface ServerToClientEvents {
   'room-created': (data: {roomId: string; playerId: string}) => void;

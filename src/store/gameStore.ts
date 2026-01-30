@@ -102,9 +102,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setPlayers: players => set({players}),
 
   addPlayer: player =>
-    set(state => ({
-      players: [...state.players, player],
-    })),
+    set(state => {
+      // Prevent duplicates - only add if player doesn't already exist
+      if (state.players.some(p => p.id === player.id)) {
+        return state;
+      }
+      return {
+        players: [...state.players, player],
+      };
+    }),
 
   removePlayer: playerId =>
     set(state => ({
